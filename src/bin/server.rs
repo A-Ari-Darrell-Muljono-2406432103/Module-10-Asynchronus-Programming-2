@@ -41,7 +41,9 @@ async fn handle_connection(
                     if sender_addr == addr {
                         continue;
                     }
-                    ws_stream.send(Message::text(text)).await?;
+                    // Prefix the broadcasted text with the sender's socket address
+                    let tagged = format!("{}: {}", sender_addr, text);
+                    ws_stream.send(Message::text(tagged)).await?;
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,

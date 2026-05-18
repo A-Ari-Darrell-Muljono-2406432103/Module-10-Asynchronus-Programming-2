@@ -10,3 +10,19 @@ Implementasi protokol WebSocket pada alamat 127.0.0.1:2000 memanfaatkan arsitekt
 
 ## Penjelasan
 Modifikasi port jaringan dari 2000 menjadi 8080 menuntut sinkronisasi absolut antara arsitektur pelayan (server) dan pengguna (client) karena jabat tangan (handshake) protokol WebSocket mewajibkan keselarasan titik akhir (endpoint) secara mutlak agar soket komunikasi dapat dibangun. Di tingkat akar, konfigurasi sisi server wajib dirombak pada fungsi pengikatan jaringan menjadi TcpListener::bind("127.0.0.1:8080"), sementara sisi client harus disesuaikan secara pararel pada fungsi alokasi alamat menjadi Uri::from_static("ws://127.0.0.1:8080"). Kelalaian dalam menyelaraskan perubahan ini—di mana port hanya diganti pada salah satu berkas—akan langsung memicu galat kegagalan koneksi (connection refused) akibat paket data jabat tangan dikirimkan ke gerbang pintu port yang salah, namun ketika kedua sisi telah dikonfigurasi secara konsisten, seluruh aliran data aplikasi obrolan terbukti tetap mampu beroperasi secara normal tanpa kendala.
+
+![Photo 3](./photo/photo3.png)
+## Penjelasan
+Server kini menandai (prefix) setiap pesan broadcast dengan alamat soket pengirim (IP:Port). Karena saat ini belum ada nama pengguna, perubahan ini membuat penerima dapat melihat dari mana pesan berasal. Perubahan dilakukan pada `src/bin/server.rs` — sebelum mengirim ke klien lain, server membentuk pesan seperti:
+
+- Contoh keluaran klien:
+
+	127.0.0.1:54321: Halo semuanya
+
+- Alasan perubahan: memberi konteks pengirim (identifikasi minimal) tanpa menambahkan mekanisme otentikasi atau input nama pengguna.
+
+Perubahan teknis singkat: pada saat broadcast, server mengubah baris pengiriman menjadi:
+
+`let tagged = format!("{}: {}", sender_addr, text);`
+`ws_stream.send(Message::text(tagged)).await?;`
+
